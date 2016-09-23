@@ -1,0 +1,46 @@
+#!/bin/bash
+
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a s    ymlink
+    SELF="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+    SOURCE="$(readlink "$SOURCE")"
+    [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative s    ymlink, we need to resolve it relative to the path where the symlink file wa    s located
+done
+
+SELF="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+
+NODE_VER="node-v4.5.0"
+NODE_TAR_BALL="$NODE_VER.tar.gz"
+NODE_LINK="https://nodejs.org/dist/v4.5.0/node-v4.5.0.tar.gz"
+
+if [ ! -e "$SELF/bin/node" ]; then
+
+    pushd $SELF
+    if [ ! -e "$NODE_TAR_BALL" ]; then
+	echo "Downloading node $NODE_LINK"
+	wget $NODE_LINK
+    fi
+    
+    if [ ! -d "$NODE_VER" ]; then
+	tar xvfz "$NODE_TAR_BALL"
+    fi
+    
+    mkdir -p "$SELF/bin"
+    mkdir -p "$SELF/include"
+    mkdir -p "$SELF/share"
+    mkdir -p "$SELF/lib"
+    
+    cd "$NODE_VER"
+    ./configure --prefix="$SELF"
+    make -j4
+    make install
+    popd
+fi
+
+
+export PATH="$SELF"/bin:$PATH
+export NODE_PATH="$SELF/lib/node_modules":$NODE_PATH
+MYVER=`node --version`
+echo "Setting up paths for devicejs... (for node `node --version` at `which node`)"
+(env PS1="[node $MYVER] ${debian_chroot:+($debian_chroot)}\u@\h:\w\$ " bash --norc)
+
